@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "esModuleInterop": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "noEmitOnError": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "removeComments": false,
+    "sourceMap": false,
+    "strict": true,
+    "target": "ESNext",
+    "skipLibCheck": true,
+    "paths": {
+      "@game": ["./src/game"],
+      "@game/*": ["./src/game/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@utils": ["./src/utils"],
+      "@characters": ["./src/characters"],
+      "@characters/*": ["./src/characters/*"]
+    }
+  },
+
+  "exclude": ["node_modules", "ignore"]
+}

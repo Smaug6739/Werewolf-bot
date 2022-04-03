@@ -1,0 +1,13 @@
+{
+  "name": "werewolf-bot",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "author": "Smaug#6739",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "discord.js": "^14.0.0-dev.1647259751.2297c2b",
+    "dotenv": "^16.0.0",
+    "sheweny": "Sheweny/framework#dev"
+  }
+}
