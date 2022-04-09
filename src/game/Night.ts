@@ -37,6 +37,7 @@ export class Night {
       }
     } else
       return new Promise<void>(async (resolve) => {
+        if (ch.passed) return resolve();
         await this.game.interactionChannelPermissions([ch], true, this.game.guild.id);
         if (this.game.couple?.length) return resolve();
         const embedCupidon = embedDescription(ch);
@@ -73,54 +74,57 @@ export class Night {
           console.error(e);
         }
         await this.game.interactionChannelPermissions([ch], false, this.game.guild.id);
+        ch.passed = true;
         resolve();
       });
   }
   // ===========================================================VOYANTE===========================================================
   private async voyante(ch: Voyante | Voyante[]): Promise<void> {
     if (Array.isArray(ch)) {
-      await ch.every(async (c) => await this.voyante(c));
-      return;
-    }
-    return new Promise<void>(async (resolve) => {
-      const embed = embedDescription(ch);
-      const row = createCharactersSelectMenu(this.game.client, this.game.characters);
-      const sent = await this.game.interactionsChannel?.send({
-        embeds: [embed],
-        // @ts-ignore
-        components: [row],
-      });
-      const v1 = (await readSelect(sent!, [sent!.author.id]))[0];
+      for (const cpdn of ch) {
+        return await this.voyante(cpdn);
+      }
+    } else
+      return new Promise<void>(async (resolve) => {
+        const embed = embedDescription(ch);
+        const row = createCharactersSelectMenu(this.game.client, this.game.characters);
+        const sent = await this.game.interactionsChannel?.send({
+          embeds: [embed],
+          // @ts-ignore
+          components: [row],
+        });
+        const v1 = (await readSelect(sent!, [ch.discordId]))[0];
 
-      const character = this.game.characters.find((c) => c.discordId === v1);
-      if (!character) throw new Error('Character not found');
-      this.game.interactionsChannel?.send({
-        embeds: [embedDescription(character)],
+        const character = this.game.characters.find((c) => c.discordId === v1);
+        if (!character) throw new Error('Character not found');
+        this.game.interactionsChannel?.send({
+          embeds: [embedDescription(character)],
+        });
+        resolve();
       });
-      resolve();
-    });
   }
   // ===========================================================GARDE===========================================================
   private async garde(ch: Garde | Garde[]): Promise<void> {
     if (Array.isArray(ch)) {
-      await ch.every(async (c) => await this.garde(c));
-      return;
-    }
-    return new Promise<void>(async (resolve) => {
-      const embed = embedDescription(ch);
-      const row = createCharactersSelectMenu(this.game.client, this.game.characters);
-      const sent = await this.game.interactionsChannel?.send({
-        embeds: [embed],
-        // @ts-ignore
-        components: [row],
+      for (const cpdn of ch) {
+        return await this.garde(cpdn);
+      }
+    } else
+      return new Promise<void>(async (resolve) => {
+        const embed = embedDescription(ch);
+        const row = createCharactersSelectMenu(this.game.client, this.game.characters);
+        const sent = await this.game.interactionsChannel?.send({
+          embeds: [embed],
+          // @ts-ignore
+          components: [row],
+        });
+        const v1 = (await readSelect(sent!, [sent!.author.id]))[0];
+        const character = this.game.characters.find((c) => c.discordId === v1);
+        if (!character) throw new Error('Character not found');
+        this.game.interactionsChannel?.send('Joueur imunisé pour cette nuit');
+        character.immune = true;
+        resolve();
       });
-      const v1 = (await readSelect(sent!, [sent!.author.id]))[0];
-      const character = this.game.characters.find((c) => c.discordId === v1);
-      if (!character) throw new Error('Character not found');
-      this.game.interactionsChannel?.send('Joueur imunisé pour cette nuit');
-      character.immune = true;
-      resolve();
-    });
   }
   // ===========================================================LOUP-GAROU===========================================================
   private async loupsGarous(chs: LoupGarou[]): Promise<void> {
