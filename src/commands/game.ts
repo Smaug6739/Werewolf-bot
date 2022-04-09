@@ -5,6 +5,7 @@ import {
   ActionRowBuilder,
   ApplicationCommandOptionType,
   ButtonBuilder,
+  ButtonInteraction,
   ButtonStyle,
   CommandInteraction,
   Message,
@@ -81,14 +82,14 @@ export class GameCommand extends Command {
   async execute(interaction: CommandInteraction) {
     const { options } = interaction;
 
-    const nbVillageois = (options.get('Villageois')?.value as number) ?? 0;
-    const nbChasseur = (options.get('Chasseur')?.value as number) ?? 0;
-    const nbCupidon = (options.get('Cupidon')?.value as number) ?? 0;
-    const nbVoyante = (options.get('Voyante')?.value as number) ?? 0;
-    const nbGarde = (options.get('Garde')?.value as number) ?? 0;
-    const nbLoupGarou = (options.get('Loup-Garou')?.value as number) ?? 0;
-    const nbLoupBlanc = (options.get('Loup-Blanc')?.value as number) ?? 0;
-    const nbSorcière = (options.get('Sorcière')?.value as number) ?? 0;
+    const nbVillageois = (options.get('villageois')?.value as number) ?? 0;
+    const nbChasseur = (options.get('chasseur')?.value as number) ?? 0;
+    const nbCupidon = (options.get('cupidon')?.value as number) ?? 0;
+    const nbVoyante = (options.get('voyante')?.value as number) ?? 0;
+    const nbGarde = (options.get('garde')?.value as number) ?? 0;
+    const nbLoupGarou = (options.get('loup-garou')?.value as number) ?? 0;
+    const nbLoupBlanc = (options.get('loup-blanc')?.value as number) ?? 0;
+    const nbSorcière = (options.get('sorcière')?.value as number) ?? 0;
     const characters = [];
     const inscrits: string[] = [];
     const row = new ActionRowBuilder();
@@ -104,7 +105,7 @@ export class GameCommand extends Command {
       // @ts-ignore
       time: interaction.options.getNumber('temps') * 60 * 1000,
     });
-    collector.on('collect', async (b) => {
+    collector.on('collect', async (b: ButtonInteraction) => {
       inscrits.push(b.user.id);
       await b.reply({ content: 'Vous êtes inscrit', ephemeral: true });
     });
@@ -120,48 +121,60 @@ export class GameCommand extends Command {
         content: 'Il manque des personnes pour que la partie commence !',
       });
     }
+    // Mélanger l'array "inscrits"
+    for (let i = inscrits.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [inscrits[0], inscrits[j]] = [inscrits[j], inscrits[0]];
+    }
 
     for (let i = 0; i < nbVillageois; i++) {
-      const user = inscrits[Math.floor(Math.random() * inscrits.length)];
-      inscrits.splice(inscrits.indexOf(user), 1);
+      const user = inscrits[0];
+      inscrits.splice(0, 1);
       characters.push(new Character('Villageois', user));
     }
     for (let i = 0; i < nbChasseur; i++) {
-      const user = inscrits[Math.floor(Math.random() * inscrits.length)];
-      inscrits.splice(inscrits.indexOf(user), 1);
+      const user = inscrits[0];
+      inscrits.splice(0, 1);
       characters.push(new Character('Chasseur', user));
     }
     for (let i = 0; i < nbCupidon; i++) {
-      const user = inscrits[Math.floor(Math.random() * inscrits.length)];
-      inscrits.splice(inscrits.indexOf(user), 1);
+      const user = inscrits[0];
+      inscrits.splice(0, 1);
       characters.push(new Character('Cupidon', user));
     }
     for (let i = 0; i < nbVoyante; i++) {
-      const user = inscrits[Math.floor(Math.random() * inscrits.length)];
-      inscrits.splice(inscrits.indexOf(user), 1);
+      const user = inscrits[0];
+      inscrits.splice(0, 1);
       characters.push(new Character('Voyante', user));
     }
     for (let i = 0; i < nbGarde; i++) {
-      const user = inscrits[Math.floor(Math.random() * inscrits.length)];
-      inscrits.splice(inscrits.indexOf(user), 1);
+      const user = inscrits[0];
+      inscrits.splice(0, 1);
       characters.push(new Character('Garde', user));
     }
     for (let i = 0; i < nbLoupGarou; i++) {
-      const user = inscrits[Math.floor(Math.random() * inscrits.length)];
-      inscrits.splice(inscrits.indexOf(user), 1);
+      const user = inscrits[0];
+      inscrits.splice(0, 1);
       characters.push(new Character('Loup-Garou', user));
     }
     for (let i = 0; i < nbLoupBlanc; i++) {
-      const user = inscrits[Math.floor(Math.random() * inscrits.length)];
-      inscrits.splice(inscrits.indexOf(user), 1);
+      const user = inscrits[0];
+      inscrits.splice(0, 1);
       characters.push(new Character('Loup-Blanc', user));
     }
     for (let i = 0; i < nbSorcière; i++) {
-      const user = inscrits[Math.floor(Math.random() * inscrits.length)];
-      inscrits.splice(inscrits.indexOf(user), 1);
+      const user = inscrits[0];
+      inscrits.splice(0, 1);
       characters.push(new Character('Sorcière', user));
     }
+    let end: string | false = false;
+
     const game = new Game(this.client, characters, interaction.guild!, (interaction.channel as TextChannel)!.parentId!);
     await game.startGame();
+    await game.sendRolesToUsers();
+    while (!end) {
+      end = await game.turn();
+      if (end) game.end();
+    }
   }
 }

@@ -3,6 +3,7 @@ export class Character {
   public discordId: string;
   public name: string;
   public description: string;
+  public shortDescription: string;
   public order: number;
   public image: string;
   public team: string;
@@ -18,6 +19,7 @@ export class Character {
 
     this.name = character.name;
     this.description = character.description;
+    this.shortDescription = character.shortDescription;
     this.order = character.order;
     this.image = character.image;
     this.team = character.team;

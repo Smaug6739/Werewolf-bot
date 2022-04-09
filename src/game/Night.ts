@@ -3,7 +3,7 @@ import { Cupidon, Garde, LoupGarou, Voyante } from '../characters';
 import { wait } from '../utils';
 import { Game } from './Game';
 import { Character } from '../characters/_Character';
-import { ChannelType, VoiceChannel } from 'discord.js';
+import { ChannelType, VoiceChannel, PermissionFlagsBits } from 'discord.js';
 import { createVote, getVoteResult } from '../utils/interactions/vote';
 export class Night {
   public game: Game;
@@ -11,21 +11,23 @@ export class Night {
   constructor(game: Game) {
     this.game = game;
   }
-  public run(ch: Character | Character[]): Promise<void> {
-    return new Promise<void>(async (resolve) => {
-      if (ch instanceof Cupidon) {
-        await this.cupidon(ch);
-      } else if (ch instanceof Voyante) {
-        await this.voyante(ch);
-      } else if (ch instanceof Garde) {
-        await this.garde(ch);
-      } else if (ch instanceof Array && ch.some((c) => c instanceof LoupGarou)) {
-        await this.loupsGarous(ch);
-      }
-      wait(3000).then(() => resolve());
-      await this.game.clearInteractionsChannel();
-      resolve();
-    });
+  public async run(ch: Character[]): Promise<void> {
+    console.log('NIGHT:RUN: ' + ch.map((c) => c.name).join(','));
+    if (!ch.length) return Promise.resolve();
+    await this.game.clearInteractionsChannel();
+    if (ch.some((c) => c.name === 'Cupidon')) {
+      await this.cupidon(ch);
+    } else if (ch.some((c) => c.name === 'Voyante')) {
+      await this.voyante(ch);
+    } else if (ch.some((c) => c.name === 'Garde')) {
+      await this.garde(ch);
+    } else if (ch.some((c) => c.name === 'Loup-Garou')) {
+      console.log('NIGHT:RUN: LOUP');
+      await this.loupsGarous(ch);
+    }
+    await wait(3000);
+    await this.game.clearInteractionsChannel();
+    return;
   }
   // ===========================================================CUPIDON===========================================================
   private async cupidon(ch: Cupidon | Cupidon[]): Promise<void> {
@@ -38,8 +40,12 @@ export class Night {
       const embedCupidon = embedDescription(ch);
       const sent = await this.game.interactionsChannel?.send({
         embeds: [embedCupidon],
-        // @ts-ignore
-        components: [createCharactersSelectMenu(this.characters), createCharactersSelectMenu(this.characters)],
+        components: [
+          // @ts-ignore
+          createCharactersSelectMenu(this.game.client, this.characters),
+          // @ts-ignore
+          createCharactersSelectMenu(this.game.client, this.characters),
+        ],
       });
 
       const v1 = (await readSelect(sent!, [sent!.author.id]))[0];
@@ -69,7 +75,7 @@ export class Night {
     }
     return new Promise<void>(async (resolve) => {
       const embed = embedDescription(ch);
-      const row = createCharactersSelectMenu(this.game.characters);
+      const row = createCharactersSelectMenu(this.game.client, this.game.characters);
       const sent = await this.game.interactionsChannel?.send({
         embeds: [embed],
         // @ts-ignore
@@ -93,7 +99,7 @@ export class Night {
     }
     return new Promise<void>(async (resolve) => {
       const embed = embedDescription(ch);
-      const row = createCharactersSelectMenu(this.game.characters);
+      const row = createCharactersSelectMenu(this.game.client, this.game.characters);
       const sent = await this.game.interactionsChannel?.send({
         embeds: [embed],
         // @ts-ignore
@@ -109,24 +115,30 @@ export class Night {
   }
   // ===========================================================LOUP-GAROU===========================================================
   private async loupsGarous(chs: LoupGarou[]): Promise<void> {
-    this.game.guild.channels.create(`Loups-Garous`, {
+    await this.game.interactionChannelPermissions(chs, true);
+    const channel = (await this.game.guild.channels.create(`Loups-Garous`, {
       type: ChannelType.GuildVoice,
       parent: this.game.catId,
-    });
+      permissionOverwrites: [
+        {
+          id: this.game.guild.id,
+          deny: [PermissionFlagsBits.ViewChannel],
+        },
+      ],
+    })) as VoiceChannel;
     return new Promise<void>(async (resolve) => {
       for (const ch of chs) {
         const member = this.game.guild.members.cache.get(ch.discordId);
-        if (!member) throw new Error('Member not found');
-        await member.voice.setChannel(
-          this.game.guild.channels.cache.find(
-            (c) => c.name === 'Loups-Garous' && c.type === ChannelType.GuildVoice && c.parentId === this.game.catId
-          )! as VoiceChannel
-        );
+        if (!member) return console.error(new Error('Member not found'));
+        await member.voice.setChannel(channel);
       }
       const results = await createVote(this.game, chs, embedDescription(chs[0]));
       const e = getVoteResult(results);
       this.eliminated.push(e);
 
+      await this.game.interactionChannelPermissions(chs, false);
+      await this.game.moveMembersInDedicatedChannel();
+      await channel.delete();
       resolve();
     });
   }
