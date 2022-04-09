@@ -15,7 +15,10 @@ export function createVote(game: Game, canVote: Character[], embed: EmbedBuilder
     console.log('VOTE:CREATE:SENT');
     const votes = [];
     for (const user of canVote) {
-      votes.push(readSelect(sent!, [user.discordId]));
+      if (user.mayor) {
+        const result = readSelect(sent!, [user.discordId]);
+        votes.push(result, result);
+      } else votes.push(readSelect(sent!, [user.discordId]));
     }
     const values = await Promise.all(votes);
     const results = [];
