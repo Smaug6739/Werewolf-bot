@@ -43,9 +43,9 @@ export class Game {
   }
   public async interactionChannelPermissions(characters: Character[], state: boolean, guildId: string) {
     const permsArr = characters.map((c) => {
-      let obj: any = { id: c.discordId };
-      if (state) obj.allow = [PermissionsBitField.Flags.ViewChannel];
-      else obj.deny = [PermissionsBitField.Flags.ViewChannel];
+      let obj: any = { id: c.discordId, allow: [PermissionsBitField.Flags.ReadMessageHistory], deny: [] };
+      if (state) obj.allow.push(PermissionsBitField.Flags.ViewChannel);
+      else obj.deny.push(PermissionsBitField.Flags.ViewChannel);
       return obj;
     });
     permsArr.push({ id: guildId, deny: [PermissionsBitField.Flags.ViewChannel] });
@@ -100,12 +100,21 @@ export class Game {
 
     await day.vote();
     if (this.checkVictory()) return this.checkVictory();
+    for (const ch of this.characters) {
+      if (ch.immuneLast) ch.immuneLast = false;
+      if (ch.immune) {
+        ch.immune = false;
+        ch.immuneLast = true;
+      }
+    }
     return false;
   }
 
   public kill(ch: Character) {
     return new Promise<void>(async (resolve) => {
       if (ch.eliminated) return resolve();
+      if (ch.immune) return resolve();
+
       ch.eliminated = true;
       const discordUser = this.client.users.cache.get(ch.discordId)!;
       const embed = new EmbedBuilder()

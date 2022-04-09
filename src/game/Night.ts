@@ -26,7 +26,6 @@ export class Night {
       await this.loupsGarous(ch);
     }
     await wait(3000);
-    await this.game.clearInteractionsChannel();
     return;
   }
   // ===========================================================CUPIDON===========================================================
@@ -73,6 +72,7 @@ export class Night {
         } catch (e) {
           console.error(e);
         }
+        await this.game.clearInteractionsChannel();
         await this.game.interactionChannelPermissions([ch], false, this.game.guild.id);
         ch.passed = true;
         resolve();
@@ -86,6 +86,7 @@ export class Night {
       }
     } else
       return new Promise<void>(async (resolve) => {
+        await this.game.interactionChannelPermissions([ch], true, this.game.guild.id);
         const embed = embedDescription(ch);
         const row = createCharactersSelectMenu(this.game.client, this.game.characters);
         const sent = await this.game.interactionsChannel?.send({
@@ -100,6 +101,8 @@ export class Night {
         this.game.interactionsChannel?.send({
           embeds: [embedDescription(character)],
         });
+        await this.game.clearInteractionsChannel();
+        await this.game.interactionChannelPermissions([ch], false, this.game.guild.id);
         resolve();
       });
   }
@@ -111,6 +114,7 @@ export class Night {
       }
     } else
       return new Promise<void>(async (resolve) => {
+        await this.game.interactionChannelPermissions([ch], true, this.game.guild.id);
         const embed = embedDescription(ch);
         const row = createCharactersSelectMenu(this.game.client, this.game.characters);
         const sent = await this.game.interactionsChannel?.send({
@@ -118,11 +122,23 @@ export class Night {
           // @ts-ignore
           components: [row],
         });
-        const v1 = (await readSelect(sent!, [sent!.author.id]))[0];
-        const character = this.game.characters.find((c) => c.discordId === v1);
-        if (!character) throw new Error('Character not found');
+        let choice;
+        while (!choice) {
+          const v1 = (await readSelect(sent!, [ch.discordId]))[0];
+          const character = this.game.characters.find((c) => c.discordId === v1);
+          if (character?.immuneLast) {
+            this.game.interactionsChannel?.send(
+              "Vous ne pouvez pas choisir ce personnage car il a été immunisé au tour précédent. Merci d'en choisir un autre."
+            );
+            continue;
+          }
+          choice = character;
+        }
+
         this.game.interactionsChannel?.send('Joueur imunisé pour cette nuit');
-        character.immune = true;
+        choice.immune = true;
+        await this.game.clearInteractionsChannel();
+        await this.game.interactionChannelPermissions([ch], false, this.game.guild.id);
         resolve();
       });
   }
@@ -148,7 +164,7 @@ export class Night {
       const results = await createVote(this.game, chs, embedDescription(chs[0]));
       const e = getVoteResult(results);
       this.eliminated.push(e);
-
+      await this.game.clearInteractionsChannel();
       await this.game.interactionChannelPermissions(chs, false, this.game.guild.id);
       await this.game.moveMembersInDedicatedChannel();
       await channel.delete();

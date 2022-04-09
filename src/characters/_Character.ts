@@ -11,6 +11,7 @@ export class Character {
   public passed: boolean = false;
   public eliminated = false;
   public immune: boolean = false;
+  public immuneLast = false;
   //public abstract run(game: Game): Promise<any>;
   public constructor(name: string, discordId: string) {
     const character = characters.find((character: any) => character.name === name);

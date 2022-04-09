@@ -44,7 +44,7 @@ export function getVoteResult(chs: Character[]): Character {
   let r = chs.find((c) => maxKeys.includes(c.discordId))!;
   // if r is undefined, set a random character
   if (!r) {
-    r = chs[Math.floor(Math.random() * chs.length)];
+    r = chs[0];
   }
   return r;
 }
