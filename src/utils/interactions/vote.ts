@@ -38,5 +38,10 @@ export function getVoteResult(chs: Character[]): Character {
   }, {});
   const max = Math.max(...(Object.values(votes) as any));
   const maxKeys = Object.keys(votes).filter((k) => votes[k] === max);
-  return chs.find((c) => maxKeys.includes(c.discordId))!;
+  let r = chs.find((c) => maxKeys.includes(c.discordId))!;
+  // if r is undefined, set a random character
+  if (!r) {
+    r = chs[Math.floor(Math.random() * chs.length)];
+  }
+  return r;
 }

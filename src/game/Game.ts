@@ -41,15 +41,15 @@ export class Game {
     });
     await this.moveMembersInDedicatedChannel();
   }
-  public async interactionChannelPermissions(characters: Character[], state: boolean) {
-    return await this.interactionsChannel?.permissionOverwrites.set(
-      characters.map((c) => {
-        let obj: any = { id: c.discordId };
-        if (state) obj.allow = [PermissionsBitField.Flags.ViewChannel];
-        else obj.deny = [PermissionsBitField.Flags.ViewChannel];
-        return obj;
-      })
-    );
+  public async interactionChannelPermissions(characters: Character[], state: boolean, guildId: string) {
+    const permsArr = characters.map((c) => {
+      let obj: any = { id: c.discordId };
+      if (state) obj.allow = [PermissionsBitField.Flags.ViewChannel];
+      else obj.deny = [PermissionsBitField.Flags.ViewChannel];
+      return obj;
+    });
+    permsArr.push({ id: guildId, deny: [PermissionsBitField.Flags.ViewChannel] });
+    return await this.interactionsChannel?.permissionOverwrites.set(permsArr);
   }
   public async moveMembersInDedicatedChannel() {
     const channels = this.guild.channels.cache.filter((c) => c.type === ChannelType.GuildVoice && c.parentId === this.catId);
@@ -82,14 +82,14 @@ export class Game {
     console.log('Roles sent and waiting done.');
   }
   public async turn() {
-    this.interactionChannelPermissions(this.characters, false);
+    this.interactionChannelPermissions(this.characters, false, this.guild.id);
     const night = new Night(this);
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Loup-Garou'));
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Cupidon'));
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Voyante'));
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Garde'));
     const day = new Day(this);
-    this.interactionChannelPermissions(this.characters, true);
+    this.interactionChannelPermissions(this.characters, true, this.guild.id);
     if (night.eliminated.length > 0) {
       for (const toKill of night.eliminated) {
         await this.kill(toKill);
@@ -140,7 +140,7 @@ export class Game {
     await this.interactionsChannel?.bulkDelete(100);
   }
   public async end() {
-    this.interactionChannelPermissions(this.characters, true);
+    this.interactionChannelPermissions(this.characters, true, this.guild.id);
     console.log('END');
     // Delete voices channels
     const voices = this.guild.channels.cache.filter((c) => c.type === ChannelType.GuildVoice && c.parentId === this.catId);

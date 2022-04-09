@@ -115,7 +115,7 @@ export class Night {
   }
   // ===========================================================LOUP-GAROU===========================================================
   private async loupsGarous(chs: LoupGarou[]): Promise<void> {
-    await this.game.interactionChannelPermissions(chs, true);
+    await this.game.interactionChannelPermissions(chs, true, this.game.guild.id);
     const channel = (await this.game.guild.channels.create(`Loups-Garous`, {
       type: ChannelType.GuildVoice,
       parent: this.game.catId,
@@ -136,7 +136,7 @@ export class Night {
       const e = getVoteResult(results);
       this.eliminated.push(e);
 
-      await this.game.interactionChannelPermissions(chs, false);
+      await this.game.interactionChannelPermissions(chs, false, this.game.guild.id);
       await this.game.moveMembersInDedicatedChannel();
       await channel.delete();
       resolve();
