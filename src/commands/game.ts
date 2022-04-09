@@ -12,6 +12,24 @@ import {
   TextChannel,
 } from 'discord.js';
 import { Character } from '../characters/_Character';
+
+function shuffle(array: string[]) {
+  let currentIndex = array.length,
+    randomIndex;
+
+  // While there remain elements to shuffle.
+  while (currentIndex != 0) {
+    // Pick a remaining element.
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+}
+
 export class GameCommand extends Command {
   constructor(client: ShewenyClient) {
     super(client, {
@@ -122,10 +140,7 @@ export class GameCommand extends Command {
       });
     }
     // Mélanger l'array "inscrits"
-    for (let i = inscrits.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [inscrits[0], inscrits[j]] = [inscrits[j], inscrits[0]];
-    }
+    shuffle(inscrits);
 
     for (let i = 0; i < nbVillageois; i++) {
       const user = inscrits[0];
