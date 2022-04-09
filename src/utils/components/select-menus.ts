@@ -16,7 +16,7 @@ export function createCharactersSelectMenu(client: ShewenyClient, characters: Ch
   row.addComponents(
     new SelectMenuBuilder()
       .setOptions(...options)
-      .setCustomId('vote')
+      .setCustomId('vote' + Math.random() * 5)
       .setPlaceholder('Votez pour une personne')
   );
   return row;
@@ -28,7 +28,7 @@ export function readSelect(msg: Message, id: Snowflake[]) {
       filter: (m) => id.includes(m.user.id),
     });
     collector.once('collect', async (i: SelectMenuInteraction) => {
-      i.reply({ content: 'Votre choix a été pris en compte.', ephemeral: true });
+      await i.reply({ content: 'Votre choix a été pris en compte.', ephemeral: true });
       resolve(i.values);
     });
   });

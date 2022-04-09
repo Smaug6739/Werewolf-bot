@@ -105,6 +105,7 @@ export class Game {
 
   public kill(ch: Character) {
     return new Promise<void>(async (resolve) => {
+      if (ch.eliminated) return resolve();
       ch.eliminated = true;
       const discordUser = this.client.users.cache.get(ch.discordId)!;
       const embed = new EmbedBuilder()
@@ -122,6 +123,7 @@ export class Game {
         this.kill(result);
       }
       if (this.couple?.includes(ch)) {
+        console.log("===Couple's death===");
         const other = this.couple.find((c) => c !== ch);
         if (!other) return;
         await this.kill(other);
@@ -137,7 +139,7 @@ export class Game {
   }
   async clearInteractionsChannel() {
     console.log('Clearing interactions channel');
-    await this.interactionsChannel?.bulkDelete(100);
+    await this.interactionsChannel?.bulkDelete(10);
   }
   public async end() {
     this.interactionChannelPermissions(this.characters, true, this.guild.id);

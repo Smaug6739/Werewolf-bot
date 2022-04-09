@@ -30,42 +30,51 @@ export class Night {
     return;
   }
   // ===========================================================CUPIDON===========================================================
-  private async cupidon(ch: Cupidon | Cupidon[]): Promise<void> {
+  private async cupidon(ch: Cupidon | Cupidon[]): Promise<void | boolean> {
     if (Array.isArray(ch)) {
-      await ch.every(async (c) => await this.cupidon(c));
-      return;
-    }
-    return new Promise<void>(async (resolve) => {
-      if (this.game.couple?.length) return resolve();
-      const embedCupidon = embedDescription(ch);
-      const sent = await this.game.interactionsChannel?.send({
-        embeds: [embedCupidon],
-        components: [
-          // @ts-ignore
-          createCharactersSelectMenu(this.game.client, this.characters),
-          // @ts-ignore
-          createCharactersSelectMenu(this.game.client, this.characters),
-        ],
-      });
-
-      const v1 = (await readSelect(sent!, [sent!.author.id]))[0];
-      const v2 = (await readSelect(sent!, [sent!.author.id]))[0];
-
-      const ch1 = this.game.characters.find((c) => c.discordId === v1)!;
-      const ch2 = this.game.characters.find((c) => c.discordId === v2)!;
-
-      this.game.data.couple = [ch1, ch2];
-
-      const user1 = this.game.client.users.cache.get(ch1.discordId);
-      const user2 = this.game.client.users.cache.get(ch2.discordId);
-      try {
-        user1!.send(`Vous êtes maintenant en couple avec : ${user2!.username}`);
-        user2!.send(`Vous êtes maintenant en couple avec : ${user1!.username}`);
-      } catch (e) {
-        console.error(e);
+      for (const cpdn of ch) {
+        return await this.cupidon(cpdn);
       }
-      resolve();
-    });
+    } else
+      return new Promise<void>(async (resolve) => {
+        await this.game.interactionChannelPermissions([ch], true, this.game.guild.id);
+        if (this.game.couple?.length) return resolve();
+        const embedCupidon = embedDescription(ch);
+        const sent = await this.game.interactionsChannel?.send({
+          embeds: [embedCupidon],
+          components: [
+            // @ts-ignore
+            createCharactersSelectMenu(
+              this.game.client,
+              this.game.characters.filter((c) => !c.eliminated)
+            ),
+            // @ts-ignore
+            createCharactersSelectMenu(
+              this.game.client,
+              this.game.characters.filter((c) => !c.eliminated)
+            ),
+          ],
+        });
+
+        const v1 = (await readSelect(sent!, [ch.discordId]))[0];
+        const v2 = (await readSelect(sent!, [ch.discordId]))[0];
+
+        const ch1 = this.game.characters.find((c) => c.discordId === v1)!;
+        const ch2 = this.game.characters.find((c) => c.discordId === v2)!;
+
+        this.game.couple = [ch1, ch2];
+
+        const user1 = this.game.client.users.cache.get(ch1.discordId);
+        const user2 = this.game.client.users.cache.get(ch2.discordId);
+        try {
+          await user1!.send(`Vous êtes maintenant en couple avec : ${user2!.username}`);
+          await user2!.send(`Vous êtes maintenant en couple avec : ${user1!.username}`);
+        } catch (e) {
+          console.error(e);
+        }
+        await this.game.interactionChannelPermissions([ch], false, this.game.guild.id);
+        resolve();
+      });
   }
   // ===========================================================VOYANTE===========================================================
   private async voyante(ch: Voyante | Voyante[]): Promise<void> {
