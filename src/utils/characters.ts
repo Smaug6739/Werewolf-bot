@@ -1,3 +1,7 @@
+import { ShewenyClient } from 'sheweny';
+import { Character } from '../characters/_Character';
+import { embedDescription } from '../utils/components';
+import { wait } from '.';
 export const characters = [
   {
     name: 'Villageois',
@@ -79,3 +83,12 @@ export const characters = [
     team: 'Villageois',
   },
 ];
+
+export async function sendCharactersToUsers(client: ShewenyClient, characters: Character[]) {
+  for (const c of characters) {
+    const user = client.users.cache.get(c.discordId);
+    if (user) user.send({ embeds: [embedDescription(c)] });
+    await wait(2000);
+  }
+  await wait(30000); // Wait for 30 seconds
+}

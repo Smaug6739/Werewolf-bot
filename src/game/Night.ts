@@ -1,10 +1,16 @@
-import { embedDescription, readSelect, readButton, buildActionsButtons, createCharactersSelectMenu } from '../utils/components';
-import { Cupidon, Garde, LoupGarou, Voyante, LoupBlanc, Sorciere } from '../characters';
-import { wait } from '../utils';
-import { Game } from './Game';
-import { Character } from '../characters/_Character';
+import {
+  embedDescription,
+  readSelect,
+  readButton,
+  buildActionsButtons,
+  createCharactersSelectMenu,
+  wait,
+  createVote,
+  getVoteResult,
+} from '../utils';
+import { Character, Cupidon, Garde, LoupGarou, Voyante, LoupBlanc, Sorciere } from '../characters';
+import { Game } from '.';
 import { ChannelType, VoiceChannel, PermissionFlagsBits } from 'discord.js';
-import { createVote, getVoteResult } from '../utils/interactions/vote';
 export class Night {
   public game: Game;
   public eliminated: Character[] = [];

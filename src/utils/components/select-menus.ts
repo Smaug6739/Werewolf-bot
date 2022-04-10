@@ -1,5 +1,5 @@
-import { ActionRowBuilder, ButtonBuilder, SelectMenuBuilder, SelectMenuOptionBuilder } from '@discordjs/builders';
-import { ButtonInteraction, ButtonStyle, Message, SelectMenuInteraction, Snowflake } from 'discord.js';
+import { ActionRowBuilder, SelectMenuBuilder, SelectMenuOptionBuilder } from '@discordjs/builders';
+import { Message, SelectMenuInteraction, Snowflake } from 'discord.js';
 import { ShewenyClient } from 'sheweny';
 import { Character } from '../../characters/_Character';
 
@@ -32,26 +32,4 @@ export function readSelect(msg: Message, id: Snowflake[]) {
       resolve(i.values);
     });
   });
-}
-export function readButton(msg: Message, id: Snowflake[]) {
-  return new Promise<string>((resolve) => {
-    const collector = msg.createMessageComponentCollector({
-      filter: (m) => id.includes(m.user.id),
-    });
-
-    collector.once('collect', async (i: ButtonInteraction) => {
-      await i.reply({ content: 'Votre choix a été pris en compte.', ephemeral: true });
-      resolve(i.customId);
-    });
-  });
-}
-
-export function buildActionsButtons() {
-  const row = new ActionRowBuilder();
-  row.addComponents(
-    new ButtonBuilder().setLabel('Tuer le joueur').setCustomId('kill').setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setLabel('Protéger le joueur').setCustomId('save').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setLabel('Ne rien faire').setCustomId('nothing').setStyle(ButtonStyle.Secondary)
-  );
-  return row;
 }

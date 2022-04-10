@@ -1,18 +1,10 @@
-import type { Guild, TextChannel, VoiceChannel } from 'discord.js';
-import { PermissionsBitField, ChannelType } from 'discord.js';
-import { EmbedBuilder } from '@discordjs/builders';
-import { Character } from '../characters/_Character';
-import { embedDescription } from '../utils/components';
-import { createVote, getVoteResult } from '../utils/interactions/vote';
-import { Night } from './Night';
-import { Day } from './Day';
+import { PermissionsBitField, ChannelType, EmbedBuilder } from 'discord.js';
+import { Character } from '../characters';
+import { Day, Night } from '.';
+import { changeImmuneAtEndOfDay, sendCharactersToUsers, wait, createVote, getVoteResult } from '../utils';
+import type { Guild, OverwriteResolvable, TextChannel, VoiceChannel } from 'discord.js';
 import type { ShewenyClient } from 'sheweny';
-import { wait } from '../utils/index';
 
-interface GameData {
-  mayor?: Character;
-  couple?: [Character, Character];
-}
 export class Game {
   public client: ShewenyClient;
   public couple?: [Character, Character];
@@ -21,7 +13,7 @@ export class Game {
   public guild: Guild;
   public catId: string;
   public interactionsChannel?: TextChannel;
-  public data: GameData = {};
+  public infosChannel?: TextChannel;
   public constructor(client: ShewenyClient, characters: Character[], guild: Guild, catId: string) {
     this.client = client;
     this.characters = characters;
@@ -38,6 +30,24 @@ export class Game {
           deny: [PermissionsBitField.Flags.ViewChannel],
         },
       ],
+    });
+    const permissionsInfos: OverwriteResolvable[] = [
+      {
+        id: this.guild.id,
+        deny: [PermissionsBitField.Flags.ViewChannel],
+      },
+    ];
+    for (const c of this.characters) {
+      permissionsInfos.push({
+        id: c.discordId,
+        allow: [PermissionsBitField.Flags.ReadMessageHistory, PermissionsBitField.Flags.ViewChannel],
+        deny: [PermissionsBitField.Flags.SendMessages],
+      });
+    }
+    this.infosChannel = await this.guild.channels.create('Informations', {
+      parent: this.catId,
+      type: ChannelType.GuildText,
+      permissionOverwrites: permissionsInfos,
     });
     await this.moveMembersInDedicatedChannel();
   }
@@ -67,18 +77,12 @@ export class Game {
       try {
         await member.voice.setChannel(channel as VoiceChannel);
       } catch {
-        this.interactionsChannel?.send(`Impossible de déplacer ${member.user.username} vers sa maison.`);
+        this.infosChannel?.send(`Impossible de déplacer ${member.user} vers sa maison.`);
       }
     }
   }
   public async sendRolesToUsers() {
-    console.log('Sending roles to users');
-    for (const c of this.characters) {
-      const user = this.client.users.cache.get(c.discordId);
-      if (user) user.send({ embeds: [embedDescription(c)] });
-      await wait(2000);
-    }
-    await wait(30000); // Wait for 30 seconds
+    sendCharactersToUsers(this.client, this.characters);
   }
   public async turn() {
     this.interactionChannelPermissions(this.characters, false, this.guild.id);
@@ -105,15 +109,9 @@ export class Game {
     if (this.checkVictory()) return this.checkVictory();
 
     // IMMUNE CHANGE
-    for (const ch of this.characters) {
-      if (ch.immuneLast) ch.immuneLast = false;
-      if (ch.immune) {
-        ch.immune = false;
-        ch.immuneLast = true;
-      }
-    }
+    this.characters = changeImmuneAtEndOfDay(this.characters);
     await this.clearInteractionsChannel();
-    return false;
+    return false; // Continue
   }
 
   public kill(ch: Character) {

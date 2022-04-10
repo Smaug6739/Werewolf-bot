@@ -1,3 +1,4 @@
+export * from './_Character';
 export * from './Cupidon';
 export * from './Voyante';
 export * from './Garde';

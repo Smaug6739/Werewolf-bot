@@ -1,7 +1,7 @@
-import { Game } from './Game';
-import { Character } from '../characters/_Character';
 import { EmbedBuilder } from 'discord.js';
-import { createVote, getVoteResult } from '../utils/interactions/vote';
+import { Game } from '.';
+import { Character } from '../characters';
+import { createVote, getVoteResult } from '../utils';
 export class Day {
   public game: Game;
   public eliminated: Character[] = [];
