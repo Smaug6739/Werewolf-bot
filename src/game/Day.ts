@@ -1,4 +1,4 @@
-import { EmbedBuilder } from 'discord.js';
+import { ChannelType, EmbedBuilder } from 'discord.js';
 import { Game } from '.';
 import { Character } from '../characters';
 import { createVote, getVoteResult } from '../utils';
@@ -33,5 +33,20 @@ export class Day {
     const vote = await createVote(this.game, this.game.characters, embed);
     const result = await getVoteResult(vote);
     this.game.kill(result);
+  }
+  public async voicePlace() {
+    const voicePlace = await this.game.guild.channels.create('Place du village', {
+      parent: this.game.catId,
+      type: ChannelType.GuildVoice,
+    });
+    for (const ch of this.game.characters) {
+      if (ch.eliminated) continue;
+      const member = this.game.guild.members.cache.get(ch.discordId);
+      if (!member) continue;
+      try {
+        await member.voice.setChannel(voicePlace);
+      } catch {}
+    }
+    return;
   }
 }

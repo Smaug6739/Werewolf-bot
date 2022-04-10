@@ -42,6 +42,6 @@ export class InfosChannel {
   }
   public async send(params: string | MessageOptions | MessagePayload) {
     if (!this.channel) return;
-    return this.channel?.send(params);
+    return await this.channel?.send(params);
   }
 }

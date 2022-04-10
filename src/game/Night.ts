@@ -170,7 +170,9 @@ export class Night {
       for (const ch of chs) {
         const member = this.game.guild.members.cache.get(ch.discordId);
         if (!member) return console.error(new Error('Member not found'));
-        await member.voice.setChannel(channel);
+        try {
+          await member.voice.setChannel(channel);
+        } catch {}
       }
       const results = await createVote(
         this.game,

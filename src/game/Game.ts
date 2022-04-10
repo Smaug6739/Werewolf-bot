@@ -1,4 +1,4 @@
-import { ChannelType, EmbedBuilder } from 'discord.js';
+import { ChannelType, EmbedBuilder, PermissionsBitField } from 'discord.js';
 import { Character } from '../characters';
 import { Day, Night } from '.';
 import {
@@ -9,6 +9,7 @@ import {
   getVoteResult,
   InteractionChannel,
   InfosChannel,
+  embedStart,
 } from '../utils';
 import type { Guild, VoiceChannel } from 'discord.js';
 import type { ShewenyClient } from 'sheweny';
@@ -40,7 +41,10 @@ export class Game {
   public async startGame() {
     await this.channels.interaction.create(this.channels.catId);
     await this.channels.infos.create(this.characters, this.channels.catId);
+    await this.channels.infos.send({ embeds: [embedStart()] });
     await this.moveMembersInDedicatedChannel();
+    await wait(5000);
+    return;
   }
 
   public async moveMembersInDedicatedChannel() {
@@ -53,17 +57,24 @@ export class Game {
         channel = await this.guild.channels.create(`Maison de ${member.user.username}-${c.discordId}`, {
           type: ChannelType.GuildVoice,
           parent: this.catId,
+          permissionOverwrites: [
+            {
+              id: this.guild.id,
+              deny: [PermissionsBitField.Flags.ViewChannel],
+            },
+          ],
         });
       if (!member || !channel) throw new Error('Member or channel not found');
       try {
         await member.voice.setChannel(channel as VoiceChannel);
       } catch {
-        this.channels.interaction?.send(`Impossible de déplacer ${member.user} vers sa maison.`);
+        this.channels.infos?.send(`Impossible de déplacer ${member.user} vers sa maison.`);
       }
     }
   }
   public async sendRolesToUsers() {
-    sendCharactersToUsers(this.client, this.characters);
+    await sendCharactersToUsers(this.client, this.characters);
+    return;
   }
   public async turn() {
     this.channels.interaction.permissions(this.characters, false, this.guild.id);
@@ -75,9 +86,13 @@ export class Game {
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Garde'));
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Sorcière'));
     const day = new Day(this);
-    await wait(5000);
+    await wait(3000);
     await this.channels.interaction.permissions(this.characters, true, this.guild.id);
     await wait(5000);
+    await day.voicePlace();
+    await this.channels.interaction.send(
+      `@everyone, le jour se lève. Cette nuil il y a eu ${night.eliminated.length} mort(s).\nNous allons donc procéder au vote.`
+    );
     if (night.eliminated.length > 0) {
       for (const toKill of night.eliminated) {
         await this.kill(toKill);
@@ -91,7 +106,12 @@ export class Game {
 
     // IMMUNE CHANGE
     this.characters = changeImmuneAtEndOfDay(this.characters);
+    await this.channels.interaction.send(
+      `@everyone, la nuit tombe sur le village. Chaque membre du village va rejoindre sa maison et le village va s'endormir.`
+    );
+    await wait(5000);
     await this.channels.interaction.clear();
+    await this.moveMembersInDedicatedChannel();
     return false; // Continue
   }
 
@@ -140,19 +160,20 @@ export class Game {
       v.delete();
     }
     let description = `La partie est terminée.  ${
-      this.checkVictory() != 1 ? 'Les' + this.checkVictory() + 'ont gagné !' : 'Aucun gangant tous le monde est mort !'
-    } \n`;
+      this.checkVictory() != 1 ? 'Les ' + this.checkVictory() + 'ont gagné !' : 'Aucun gangant tous le monde est mort !'
+    } \n\n`;
     for (const c of this.characters) {
       const discordUser = this.client.users.cache.get(c.discordId)!;
       description += `${discordUser} : ${c.name} (${c.eliminated ? 'mort' : 'vivant'})\n`;
     }
-    const embed = new EmbedBuilder().setTitle('Fin de la partie').setDescription(description);
-    await this.channels.interaction.send({ content: '@everyone', embeds: [embed] });
+    const embed = new EmbedBuilder().setTitle('Fin de la partie').setDescription(description).setColor([10, 163, 240]);
+    await this.channels.infos.send({ content: '@everyone', embeds: [embed] });
     await this.channels.interaction.send(
-      'Ce channel sera supprimé dans 5 minutes. Vous pouvez lancer une nouvelle partie en utilisant la commande /game.'
+      'Ce channel et celui du déroulement seront supprimés dans 5 minutes. Vous pouvez lancer une nouvelle partie en utilisant la commande /game.'
     );
     await wait(300000);
     try {
+      await this.channels.infos?.delete();
       await this.channels.interaction?.delete();
     } catch {}
   }

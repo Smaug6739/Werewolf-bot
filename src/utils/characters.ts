@@ -90,5 +90,6 @@ export async function sendCharactersToUsers(client: ShewenyClient, characters: C
     if (user) user.send({ embeds: [embedDescription(c)] });
     await wait(2000);
   }
-  await wait(30000); // Wait for 30 seconds
+  await wait(30000); // 30s
+  return;
 }

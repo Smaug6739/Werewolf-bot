@@ -135,7 +135,7 @@ export class GameCommand extends Command {
     });
     const total = nbChasseur + nbCupidon + nbVoyante + nbGarde + nbLoupGarou + nbLoupBlanc + nbSorcière + nbVillageois;
     if (inscrits.length < total) {
-      return await interaction.reply({
+      return await interaction.channel?.send({
         content: 'Il manque des personnes pour que la partie commence !',
       });
     }

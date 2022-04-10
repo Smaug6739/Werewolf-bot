@@ -12,7 +12,7 @@ export class InteractionChannel {
     this.guild = guild;
   }
   public async create(catId: string) {
-    this.guild.channels.create('Déroulement', {
+    this.channel = await this.guild.channels.create('Déroulement', {
       parent: catId,
       type: ChannelType.GuildText,
       permissionOverwrites: [
@@ -44,6 +44,6 @@ export class InteractionChannel {
   }
   public async send(params: string | MessageOptions | MessagePayload) {
     if (!this.channel) return;
-    return this.channel?.send(params);
+    return await this.channel?.send(params);
   }
 }
