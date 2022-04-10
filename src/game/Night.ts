@@ -1,5 +1,5 @@
-import { embedDescription, readSelect, createCharactersSelectMenu } from '../utils/components';
-import { Cupidon, Garde, LoupGarou, Voyante } from '../characters';
+import { embedDescription, readSelect, readButton, buildActionsButtons, createCharactersSelectMenu } from '../utils/components';
+import { Cupidon, Garde, LoupGarou, Voyante, LoupBlanc, Sorciere } from '../characters';
 import { wait } from '../utils';
 import { Game } from './Game';
 import { Character } from '../characters/_Character';
@@ -21,6 +21,10 @@ export class Night {
       await this.voyante(ch);
     } else if (ch.some((c) => c.name === 'Garde')) {
       await this.garde(ch);
+    } else if (ch.some((c) => c.name === 'Loup-Blanc')) {
+      await this.loupsBlancs(ch);
+    } else if (ch.some((c) => c.name === 'Sorcière')) {
+      await this.sorcieres(ch as Sorciere[]);
     } else if (ch.some((c) => c.name === 'Loup-Garou')) {
       console.log('NIGHT:RUN: LOUP');
       await this.loupsGarous(ch);
@@ -91,6 +95,7 @@ export class Night {
         const row = createCharactersSelectMenu(this.game.client, this.game.characters);
         const sent = await this.game.interactionsChannel?.send({
           embeds: [embed],
+          content: `<@${ch.discordId}>`,
           // @ts-ignore
           components: [row],
         });
@@ -119,6 +124,7 @@ export class Night {
         const row = createCharactersSelectMenu(this.game.client, this.game.characters);
         const sent = await this.game.interactionsChannel?.send({
           embeds: [embed],
+          content: `<@${ch.discordId}>`,
           // @ts-ignore
           components: [row],
         });
@@ -135,7 +141,8 @@ export class Night {
           choice = character;
         }
 
-        this.game.interactionsChannel?.send('Joueur imunisé pour cette nuit');
+        await this.game.interactionsChannel?.send('Joueur imunisé pour cette nuit');
+        await wait(5000);
         choice.immune = true;
         await this.game.clearInteractionsChannel();
         await this.game.interactionChannelPermissions([ch], false, this.game.guild.id);
@@ -161,7 +168,12 @@ export class Night {
         if (!member) return console.error(new Error('Member not found'));
         await member.voice.setChannel(channel);
       }
-      const results = await createVote(this.game, chs, embedDescription(chs[0]));
+      const results = await createVote(
+        this.game,
+        chs,
+        embedDescription(chs[0]),
+        `${chs.map((c) => '<@' + c.discordId + '>').join(' ')}`
+      );
       const e = getVoteResult(results);
       this.eliminated.push(e);
       await this.game.clearInteractionsChannel();
@@ -170,5 +182,94 @@ export class Night {
       await channel.delete();
       resolve();
     });
+  }
+  // ===========================================================LOUP-BLANC===========================================================
+  private async loupsBlancs(ch: LoupBlanc[] | LoupBlanc): Promise<void> {
+    if (Array.isArray(ch)) {
+      for (const lpb of ch) {
+        return await this.loupsBlancs(lpb);
+      }
+    } else
+      return new Promise<void>(async (resolve) => {
+        await this.game.interactionChannelPermissions([ch], true, this.game.guild.id);
+        const embed = embedDescription(ch);
+        const row = createCharactersSelectMenu(
+          this.game.client,
+          this.game.characters.filter((c) => c.name === 'Loup-Garou' || c.name === 'Loup-Blanc')
+        );
+        const sent = await this.game.interactionsChannel?.send({
+          embeds: [embed],
+          content: `<@${ch.discordId}>`,
+          // @ts-ignore
+          components: [row],
+        });
+        const v1 = (await readSelect(sent!, [ch.discordId]))[0];
+        const character = this.game.characters.find((c) => c.discordId === v1);
+        if (!character) throw new Error('Character not found');
+        this.eliminated.push(character);
+
+        await wait(5000);
+        await this.game.clearInteractionsChannel();
+        await this.game.interactionChannelPermissions([ch], false, this.game.guild.id);
+        resolve();
+      });
+  }
+
+  // ===========================================================SORCIERE===========================================================
+  private async sorcieres(ch: Sorciere[] | Sorciere): Promise<void> {
+    if (Array.isArray(ch)) {
+      for (const lpb of ch) {
+        return await this.sorcieres(lpb);
+      }
+    } else
+      return new Promise<void>(async (resolve) => {
+        await this.game.interactionChannelPermissions([ch], true, this.game.guild.id);
+        const embed = embedDescription(ch);
+        const row = createCharactersSelectMenu(
+          this.game.client,
+          this.game.characters.filter((c) => !c.eliminated)
+        );
+        const sent = await this.game.interactionsChannel?.send({
+          embeds: [embed],
+          content: `<@${ch.discordId}>`,
+          // @ts-ignore
+          components: [buildActionsButtons()],
+        });
+        let action;
+        while (!action) {
+          action = await readButton(sent!, [ch.discordId]);
+          if (action === 'kill' && ch.kill) {
+            this.game.interactionsChannel?.send('Vous avez déjà fait cette action');
+            action = '';
+          }
+          if (action === 'save' && ch.save) {
+            this.game.interactionsChannel?.send('Vous avez déjà fait cette action');
+            action = '';
+          }
+        }
+        console.log(action);
+
+        if (action === 'kill' || action === 'save') {
+          const sent2 = await this.game.interactionsChannel?.send({
+            // @ts-ignore
+            components: [row],
+          });
+          const v1 = (await readSelect(sent2!, [ch.discordId]))[0];
+          const character = this.game.characters.find((c) => c.discordId === v1);
+          if (!character) throw new Error('Character not found');
+          if (action === 'kill') {
+            ch.kill = true;
+            this.eliminated.push(character);
+          }
+          if (action === 'save') {
+            ch.save = true;
+            character.immune = true;
+          }
+        }
+        await wait(5000);
+        await this.game.clearInteractionsChannel();
+        await this.game.interactionChannelPermissions([ch], false, this.game.guild.id);
+        resolve();
+      });
   }
 }

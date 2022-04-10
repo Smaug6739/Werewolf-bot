@@ -182,7 +182,7 @@ export class GameCommand extends Command {
       inscrits.splice(0, 1);
       characters.push(new Character('Sorcière', user));
     }
-    let end: string | false = false;
+    let end: string | false | number = false;
 
     const game = new Game(this.client, characters, interaction.guild!, (interaction.channel as TextChannel)!.parentId!);
     await game.startGame();

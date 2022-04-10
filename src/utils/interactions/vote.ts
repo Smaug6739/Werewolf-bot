@@ -3,12 +3,13 @@ import { Game } from '../../game/Game';
 import { readSelect } from '../components';
 import { EmbedBuilder } from 'discord.js';
 import { createCharactersSelectMenu } from '../components';
-export function createVote(game: Game, canVote: Character[], embed: EmbedBuilder): Promise<Character[]> {
+export function createVote(game: Game, canVote: Character[], embed: EmbedBuilder, content = ''): Promise<Character[]> {
   return new Promise<Character[]>(async (resolve) => {
     console.log('VOTE:CREATE');
 
     const sent = await game.interactionsChannel?.send({
       embeds: [embed],
+      content,
       // @ts-ignore
       components: [createCharactersSelectMenu(game.client, game.characters)],
     });

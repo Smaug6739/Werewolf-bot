@@ -49,7 +49,8 @@ export class Game {
       return obj;
     });
     permsArr.push({ id: guildId, deny: [PermissionsBitField.Flags.ViewChannel] });
-    return await this.interactionsChannel?.permissionOverwrites.set(permsArr);
+    await this.interactionsChannel?.permissionOverwrites.set(permsArr);
+    return;
   }
   public async moveMembersInDedicatedChannel() {
     const channels = this.guild.channels.cache.filter((c) => c.type === ChannelType.GuildVoice && c.parentId === this.catId);
@@ -84,12 +85,16 @@ export class Game {
   public async turn() {
     this.interactionChannelPermissions(this.characters, false, this.guild.id);
     const night = new Night(this);
-    await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Loup-Garou'));
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Cupidon'));
+    await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Loup-Garou'));
+    await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Loup-Blanc'));
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Voyante'));
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Garde'));
+    await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Sorcière'));
     const day = new Day(this);
-    this.interactionChannelPermissions(this.characters, true, this.guild.id);
+    await wait(5000);
+    await this.interactionChannelPermissions(this.characters, true, this.guild.id);
+    await wait(5000);
     if (night.eliminated.length > 0) {
       for (const toKill of night.eliminated) {
         await this.kill(toKill);
@@ -100,6 +105,8 @@ export class Game {
 
     await day.vote();
     if (this.checkVictory()) return this.checkVictory();
+
+    // IMMUNE CHANGE
     for (const ch of this.characters) {
       if (ch.immuneLast) ch.immuneLast = false;
       if (ch.immune) {
@@ -107,6 +114,7 @@ export class Game {
         ch.immuneLast = true;
       }
     }
+    await this.clearInteractionsChannel();
     return false;
   }
 
@@ -142,6 +150,7 @@ export class Game {
   }
   public checkVictory() {
     const alive = this.characters.filter((c) => !c.eliminated);
+    if (!alive.length) return 1;
     const categoriesAlive = new Set(alive.map((c) => c.team));
     if (categoriesAlive.size === 1) return [...categoriesAlive][0];
     else return false;
@@ -158,7 +167,9 @@ export class Game {
     for (const v of voices.values()) {
       v.delete();
     }
-    let description = `La partie est terminée. Les ${this.checkVictory()} ont gagné !\n`;
+    let description = `La partie est terminée.  ${
+      this.checkVictory() != 1 ? 'Les' + this.checkVictory() + 'ont gagné !' : 'Aucun gangant tous le monde est mort !'
+    } \n`;
     for (const c of this.characters) {
       const discordUser = this.client.users.cache.get(c.discordId)!;
       description += `${discordUser} : ${c.name} (${c.eliminated ? 'mort' : 'vivant'})\n`;
