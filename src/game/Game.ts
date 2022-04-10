@@ -78,9 +78,7 @@ export class Game {
       if (user) user.send({ embeds: [embedDescription(c)] });
       await wait(2000);
     }
-    console.log('Roles sent. Waiting for 10 seconds');
-    await wait(10000);
-    console.log('Roles sent and waiting done.');
+    await wait(30000); // Wait for 30 seconds
   }
   public async turn() {
     this.interactionChannelPermissions(this.characters, false, this.guild.id);
