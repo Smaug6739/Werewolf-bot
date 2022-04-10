@@ -21,7 +21,7 @@ export class Day {
     const result = await getVoteResult(vote);
     this.game.mayor = result;
     result.mayor = true;
-    this.game.interactionsChannel!.send(
+    this.game.channels.interaction.send(
       `Le maire est ${this.game.client.users.cache.get(result.discordId)!.username} ! Félicitations !`
     );
   }

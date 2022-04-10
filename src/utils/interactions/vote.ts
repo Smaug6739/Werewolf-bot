@@ -5,15 +5,12 @@ import { EmbedBuilder } from 'discord.js';
 import { createCharactersSelectMenu } from '../components';
 export function createVote(game: Game, canVote: Character[], embed: EmbedBuilder, content = ''): Promise<Character[]> {
   return new Promise<Character[]>(async (resolve) => {
-    console.log('VOTE:CREATE');
-
-    const sent = await game.interactionsChannel?.send({
+    const sent = await game.channels.interaction?.send({
       embeds: [embed],
       content,
       // @ts-ignore
       components: [createCharactersSelectMenu(game.client, game.characters)],
     });
-    console.log('VOTE:CREATE:SENT');
     const votes = [];
     for (const user of canVote) {
       if (user.mayor) {
@@ -23,7 +20,6 @@ export function createVote(game: Game, canVote: Character[], embed: EmbedBuilder
     }
     const values = await Promise.all(votes);
     const results = [];
-    console.log('VOTE:CREATE:VALUES');
     for (const v of values) {
       results.push(game.characters.find((c) => c.discordId === v[0])!);
     }

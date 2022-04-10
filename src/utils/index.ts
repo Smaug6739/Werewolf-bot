@@ -5,3 +5,5 @@ export * from './characters';
 export * from './immune';
 export * from './interactions/vote';
 export * from './components/index';
+export * from './channels/InteractionChannel';
+export * from './channels/InfosChannel';

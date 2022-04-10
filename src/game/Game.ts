@@ -1,67 +1,48 @@
-import { PermissionsBitField, ChannelType, EmbedBuilder } from 'discord.js';
+import { ChannelType, EmbedBuilder } from 'discord.js';
 import { Character } from '../characters';
 import { Day, Night } from '.';
-import { changeImmuneAtEndOfDay, sendCharactersToUsers, wait, createVote, getVoteResult } from '../utils';
-import type { Guild, OverwriteResolvable, TextChannel, VoiceChannel } from 'discord.js';
+import {
+  changeImmuneAtEndOfDay,
+  sendCharactersToUsers,
+  wait,
+  createVote,
+  getVoteResult,
+  InteractionChannel,
+  InfosChannel,
+} from '../utils';
+import type { Guild, VoiceChannel } from 'discord.js';
 import type { ShewenyClient } from 'sheweny';
 
+interface GameChannels {
+  infos: InfosChannel;
+  interaction: InteractionChannel;
+  catId: string;
+}
 export class Game {
   public client: ShewenyClient;
   public couple?: [Character, Character];
+  public channels: GameChannels;
   public mayor?: Character;
   public characters: Character[] = [];
   public guild: Guild;
   public catId: string;
-  public interactionsChannel?: TextChannel;
-  public infosChannel?: TextChannel;
   public constructor(client: ShewenyClient, characters: Character[], guild: Guild, catId: string) {
     this.client = client;
     this.characters = characters;
     this.guild = guild;
     this.catId = catId;
+    this.channels = {
+      infos: new InfosChannel(this.client, this.guild),
+      interaction: new InteractionChannel(this.client, this.guild),
+      catId: catId,
+    };
   }
   public async startGame() {
-    this.interactionsChannel = await this.guild.channels.create('Déroulement', {
-      parent: this.catId,
-      type: ChannelType.GuildText,
-      permissionOverwrites: [
-        {
-          id: this.guild.id,
-          deny: [PermissionsBitField.Flags.ViewChannel],
-        },
-      ],
-    });
-    const permissionsInfos: OverwriteResolvable[] = [
-      {
-        id: this.guild.id,
-        deny: [PermissionsBitField.Flags.ViewChannel],
-      },
-    ];
-    for (const c of this.characters) {
-      permissionsInfos.push({
-        id: c.discordId,
-        allow: [PermissionsBitField.Flags.ReadMessageHistory, PermissionsBitField.Flags.ViewChannel],
-        deny: [PermissionsBitField.Flags.SendMessages],
-      });
-    }
-    this.infosChannel = await this.guild.channels.create('Informations', {
-      parent: this.catId,
-      type: ChannelType.GuildText,
-      permissionOverwrites: permissionsInfos,
-    });
+    await this.channels.interaction.create(this.channels.catId);
+    await this.channels.infos.create(this.characters, this.channels.catId);
     await this.moveMembersInDedicatedChannel();
   }
-  public async interactionChannelPermissions(characters: Character[], state: boolean, guildId: string) {
-    const permsArr = characters.map((c) => {
-      let obj: any = { id: c.discordId, allow: [PermissionsBitField.Flags.ReadMessageHistory], deny: [] };
-      if (state) obj.allow.push(PermissionsBitField.Flags.ViewChannel);
-      else obj.deny.push(PermissionsBitField.Flags.ViewChannel);
-      return obj;
-    });
-    permsArr.push({ id: guildId, deny: [PermissionsBitField.Flags.ViewChannel] });
-    await this.interactionsChannel?.permissionOverwrites.set(permsArr);
-    return;
-  }
+
   public async moveMembersInDedicatedChannel() {
     const channels = this.guild.channels.cache.filter((c) => c.type === ChannelType.GuildVoice && c.parentId === this.catId);
     for (const c of this.characters) {
@@ -77,7 +58,7 @@ export class Game {
       try {
         await member.voice.setChannel(channel as VoiceChannel);
       } catch {
-        this.infosChannel?.send(`Impossible de déplacer ${member.user} vers sa maison.`);
+        this.channels.interaction?.send(`Impossible de déplacer ${member.user} vers sa maison.`);
       }
     }
   }
@@ -85,7 +66,7 @@ export class Game {
     sendCharactersToUsers(this.client, this.characters);
   }
   public async turn() {
-    this.interactionChannelPermissions(this.characters, false, this.guild.id);
+    this.channels.interaction.permissions(this.characters, false, this.guild.id);
     const night = new Night(this);
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Cupidon'));
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Loup-Garou'));
@@ -95,7 +76,7 @@ export class Game {
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Sorcière'));
     const day = new Day(this);
     await wait(5000);
-    await this.interactionChannelPermissions(this.characters, true, this.guild.id);
+    await this.channels.interaction.permissions(this.characters, true, this.guild.id);
     await wait(5000);
     if (night.eliminated.length > 0) {
       for (const toKill of night.eliminated) {
@@ -110,7 +91,7 @@ export class Game {
 
     // IMMUNE CHANGE
     this.characters = changeImmuneAtEndOfDay(this.characters);
-    await this.clearInteractionsChannel();
+    await this.channels.interaction.clear();
     return false; // Continue
   }
 
@@ -128,7 +109,7 @@ export class Game {
         .setThumbnail(ch.image)
         .setColor(0xff0000)
         .setFooter({ text: 'Mort' });
-      await this.interactionsChannel?.send({ embeds: [embed] });
+      await this.channels.interaction.send({ embeds: [embed] });
       if (ch.name === 'Chasseur') {
         const embedChasseur = new EmbedBuilder().setTitle('Le chasseur est mort').setDescription(`${discordUser} est mort`);
         const vote = await createVote(this, [ch], embedChasseur);
@@ -136,7 +117,6 @@ export class Game {
         this.kill(result);
       }
       if (this.couple?.includes(ch)) {
-        console.log("===Couple's death===");
         const other = this.couple.find((c) => c !== ch);
         if (!other) return;
         await this.kill(other);
@@ -151,13 +131,9 @@ export class Game {
     if (categoriesAlive.size === 1) return [...categoriesAlive][0];
     else return false;
   }
-  async clearInteractionsChannel() {
-    console.log('Clearing interactions channel');
-    await this.interactionsChannel?.bulkDelete(10);
-  }
+
   public async end() {
-    this.interactionChannelPermissions(this.characters, true, this.guild.id);
-    console.log('END');
+    this.channels.interaction.permissions(this.characters, true, this.guild.id);
     // Delete voices channels
     const voices = this.guild.channels.cache.filter((c) => c.type === ChannelType.GuildVoice && c.parentId === this.catId);
     for (const v of voices.values()) {
@@ -171,13 +147,13 @@ export class Game {
       description += `${discordUser} : ${c.name} (${c.eliminated ? 'mort' : 'vivant'})\n`;
     }
     const embed = new EmbedBuilder().setTitle('Fin de la partie').setDescription(description);
-    await this.interactionsChannel?.send({ content: '@everyone', embeds: [embed] });
-    await this.interactionsChannel?.send(
+    await this.channels.interaction.send({ content: '@everyone', embeds: [embed] });
+    await this.channels.interaction.send(
       'Ce channel sera supprimé dans 5 minutes. Vous pouvez lancer une nouvelle partie en utilisant la commande /game.'
     );
     await wait(300000);
     try {
-      await this.interactionsChannel?.delete();
+      await this.channels.interaction?.delete();
     } catch {}
   }
 }
