@@ -6,6 +6,8 @@
   "license": "MIT",
   "private": false,
   "dependencies": {
+    "@sheweny/paginator": "^2.0.0-dev.2",
+    "array-paginator": "^1.5.2",
     "discord.js": "^14.0.0-dev.1647259751.2297c2b",
     "dotenv": "^16.0.0",
     "sheweny": "Sheweny/framework#dev"

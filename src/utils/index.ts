@@ -7,3 +7,4 @@ export * from './interactions/vote';
 export * from './components/index';
 export * from './channels/InteractionChannel';
 export * from './channels/InfosChannel';
+export * from './paginator';
