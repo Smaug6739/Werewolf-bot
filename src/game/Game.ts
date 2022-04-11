@@ -77,7 +77,11 @@ export class Game {
     return;
   }
   public async turn() {
-    this.channels.interaction.permissions(this.characters, false, this.guild.id);
+    await this.channels.interaction.permissions(this.characters, true, this.guild.id);
+    await this.channels.infos.send(
+      `@everyone, la nuit tombe sur le village. Chaque membre du village va rejoindre sa maison et le village va s'endormir\n*Veillez à être dans un channel vocal*.`
+    );
+    await this.channels.interaction.permissions(this.characters, false, this.guild.id);
     const night = new Night(this);
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Cupidon'));
     await night.run(this.characters.filter((c) => !c.eliminated && c.name === 'Loup-Garou'));
@@ -90,8 +94,8 @@ export class Game {
     await this.channels.interaction.permissions(this.characters, true, this.guild.id);
     await wait(5000);
     await day.voicePlace();
-    await this.channels.interaction.send(
-      `@everyone, le jour se lève. Cette nuil il y a eu ${night.eliminated.length} mort(s).\nNous allons donc procéder au vote.`
+    await this.channels.infos.send(
+      `@everyone, le jour se lève. Cette nuil il y a eu ${night.eliminated.length} mort(s).\nNous allons donc procéder au vote. Pour cela, rendez-vous dans le channel **interactions**.`
     );
     if (night.eliminated.length > 0) {
       for (const toKill of night.eliminated) {
@@ -106,9 +110,7 @@ export class Game {
 
     // IMMUNE CHANGE
     this.characters = changeImmuneAtEndOfDay(this.characters);
-    await this.channels.interaction.send(
-      `@everyone, la nuit tombe sur le village. Chaque membre du village va rejoindre sa maison et le village va s'endormir.`
-    );
+
     await wait(5000);
     await this.channels.interaction.clear();
     await this.moveMembersInDedicatedChannel();
@@ -169,6 +171,9 @@ export class Game {
     const embed = new EmbedBuilder().setTitle('Fin de la partie').setDescription(description).setColor([10, 163, 240]);
     await this.channels.infos.send({ content: '@everyone', embeds: [embed] });
     await this.channels.interaction.send(
+      'Ce channel et celui du déroulement seront supprimés dans 5 minutes. Vous pouvez lancer une nouvelle partie en utilisant la commande /game.'
+    );
+    await this.channels.infos.send(
       'Ce channel et celui du déroulement seront supprimés dans 5 minutes. Vous pouvez lancer une nouvelle partie en utilisant la commande /game.'
     );
     await wait(300000);
