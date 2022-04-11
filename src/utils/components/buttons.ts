@@ -17,9 +17,9 @@ export function readButton(msg: Message, id: Snowflake[]) {
 export function buildActionsButtons() {
   const row = new ActionRowBuilder();
   row.addComponents(
-    new ButtonBuilder().setLabel('Tuer le joueur').setCustomId('kill').setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setLabel('Protéger le joueur').setCustomId('save').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setLabel('Ne rien faire').setCustomId('nothing').setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setLabel('Tuer un joueur').setCustomId('kill').setStyle(ButtonStyle.Danger).setEmoji({ name: '❤️‍🔥' }),
+    new ButtonBuilder().setLabel('Protéger un joueur').setCustomId('save').setStyle(ButtonStyle.Success).setEmoji({ name: '❤️' }),
+    new ButtonBuilder().setLabel('Ne rien faire').setCustomId('nothing').setStyle(ButtonStyle.Secondary).setEmoji({ name: '⌛' })
   );
   return row;
 }

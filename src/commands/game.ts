@@ -108,7 +108,13 @@ export class GameCommand extends Command {
         //=====================INSCRIPTIONS=====================
         const inscrits: string[] = [];
         const row = new ActionRowBuilder();
-        row.addComponents(new ButtonBuilder().setLabel('Inscription').setStyle(ButtonStyle.Success).setCustomId('inscription'));
+        row.addComponents(
+          new ButtonBuilder()
+            .setLabel('Inscription')
+            .setStyle(ButtonStyle.Success)
+            .setCustomId('inscription')
+            .setEmoji({ name: '📢' })
+        );
         const reply = await interaction.channel?.send({
           embeds: [embedCommand()],
           // @ts-ignore

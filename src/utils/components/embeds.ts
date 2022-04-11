@@ -17,7 +17,7 @@ export function embedStart() {
     .setDescription(
       "Le jeu commence. Le bot est en train d'envoyer vos roles dans vos messages privés. Lorsque ce sera à votre tour de jouer vous serez mentionné dans un channel nommé déroulement."
     )
-    .setColor([229, 10, 240])
+    .setColor(0xff0000)
     .setFooter({ text: 'Le jeu commence' });
   return embed;
 }
@@ -28,7 +28,7 @@ export function embedConfigGame() {
     .setDescription(
       "Veuillez utiliser l'embed avec les select-menus ci-dessous pour configurer une partie.\n\n- Pour choisir le nombre de joueurs vous devez le séléctionner dans le select-menu ci-dessous. Vous pouvez choisir un total (au maximum) de 25 roles. Le nombre de joueurs par défaut pour les roles est de 0.\n\n- Utilisez les boutons `Suivant` et `Précédent` pour naviguer entre les personnages.\n\n- Une fois le choix terminé, cliquez sur le bouton 'Terminé' pour valider votre choix."
     )
-    .setColor([213, 48, 50])
+    .setColor(0xff0000)
     .setFooter({
       text: 'Une fois que vous aurez cliqué sur terminé, les inscriptions seront ouvertes dans ce channel.',
     });
