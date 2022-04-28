@@ -1,4 +1,4 @@
-# Werewolf-bot
+# Werewolf-bot [bêta]
 Un bot discord pour faire des parties de loup-garou avec les nouvelles interactions de discord.
 
 ## Exigences
@@ -13,3 +13,8 @@ Un bot discord pour faire des parties de loup-garou avec les nouvelles interacti
 3) Compilez les fichiers `tsc`
 4) Modifier le fichier `.env`
 5) Lancez le bot, vous pouvez commencer à jouer avec la commande `/game`
+
+## Technologies & librairies
+
+- Typescript & Node.js
+- Discord.js V14.0.0(dev)
