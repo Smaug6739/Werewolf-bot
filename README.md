@@ -1,7 +1,7 @@
-# Werewolf-bot [bêta]
+# Werewolf-bot [beta]
 Un bot discord pour faire des parties de loup-garou avec les nouvelles interactions de discord.
 
-## Exigences
+## Requirements
 
 1) Nodejs version 16.9 ou supérieur avec npm ou yarn
 2) Un bot discord (https://discord.dev)
