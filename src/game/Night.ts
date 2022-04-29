@@ -268,6 +268,12 @@ export class Night {
           if (action === 'save') {
             ch.save = true;
             character.immune = true;
+            if (this.eliminated.find((c) => c.discordId === character.discordId)) {
+              this.eliminated.splice(
+                this.eliminated.findIndex((c) => c.discordId === character.discordId),
+                1
+              );
+            }
           }
         }
         await wait(5000);
