@@ -77,122 +77,122 @@ export class GameCommand extends Command {
       for (const us of data) {
         switch (us.name) {
           case 'Villageois':
-            nbVillageois = us.value;
+            nbVillageois = parseInt(us.value);
             break;
           case 'Chasseur':
-            nbChasseur = us.value;
+            nbChasseur = parseInt(us.value);
             break;
           case 'Cupidon':
-            nbCupidon = us.value;
+            nbCupidon = parseInt(us.value);
             break;
           case 'Voyante':
-            nbVoyante = us.value;
+            nbVoyante = parseInt(us.value);
             break;
           case 'Garde':
-            nbGarde = us.value;
+            nbGarde = parseInt(us.value);
             break;
           case 'Loup-Garou':
-            nbLoupGarou = us.value;
+            nbLoupGarou = parseInt(us.value);
             break;
           case 'Loup-Blanc':
-            nbLoupBlanc = us.value;
+            nbLoupBlanc = parseInt(us.value);
             break;
           case 'Sorcière':
-            nbSorcière = us.value;
+            nbSorcière = parseInt(us.value);
             break;
         }
-        if (characters.length > 25) {
-          return interaction.channel?.send('Vous ne pouvez pas avoir plus de 25 personnages');
-        }
+      }
+      if (characters.length > 25) {
+        return interaction.channel?.send('Vous ne pouvez pas avoir plus de 25 personnages');
+      }
 
-        //=====================INSCRIPTIONS=====================
-        const inscrits: string[] = [];
-        const row = new ActionRowBuilder();
-        row.addComponents(
-          new ButtonBuilder()
-            .setLabel('Inscription')
-            .setStyle(ButtonStyle.Success)
-            .setCustomId('inscription')
-            .setEmoji({ name: '📢' })
-        );
-        const reply = await interaction.channel?.send({
-          embeds: [embedCommand()],
-          // @ts-ignore
-          components: [row],
+      //=====================INSCRIPTIONS=====================
+      const inscrits: string[] = [];
+      const row = new ActionRowBuilder();
+      row.addComponents(
+        new ButtonBuilder()
+          .setLabel('Inscription')
+          .setStyle(ButtonStyle.Success)
+          .setCustomId('inscription')
+          .setEmoji({ name: '📢' })
+      );
+      const reply = await interaction.channel?.send({
+        embeds: [embedCommand()],
+        // @ts-ignore
+        components: [row],
+      });
+      const collector = (reply as Message).createMessageComponentCollector({
+        // @ts-ignore
+        time: (interaction.options.getNumber('temps') || 10) * 60 * 1000,
+      });
+      collector.on('collect', async (b: ButtonInteraction) => {
+        inscrits.push(b.user.id);
+        await b.reply({ content: 'Vous êtes inscrit', ephemeral: true });
+      });
+      await new Promise<void>((resolve) => {
+        collector.on('end', async () => {
+          resolve();
+          interaction.editReply('La partie peut commencer !');
         });
-        const collector = (reply as Message).createMessageComponentCollector({
-          // @ts-ignore
-          time: interaction.options.getNumber('temps') * 60 * 1000,
-        });
-        collector.on('collect', async (b: ButtonInteraction) => {
-          inscrits.push(b.user.id);
-          await b.reply({ content: 'Vous êtes inscrit', ephemeral: true });
-        });
-        await new Promise<void>((resolve) => {
-          collector.on('end', async () => {
-            resolve();
-            interaction.editReply('La partie peut commencer !');
-          });
-        });
-        const total = nbChasseur + nbCupidon + nbVoyante + nbGarde + nbLoupGarou + nbLoupBlanc + nbSorcière + nbVillageois;
-        if (inscrits.length < total) {
-          return await interaction.channel?.send({
-            content: 'Il manque des personnes pour que la partie commence !',
-          });
-        }
-        //=====================SHUFFLE=====================
-        shuffle(inscrits);
-        //=====================AFFECT-USERS=====================
-        for (let i = 0; i < nbVillageois; i++) {
-          const user = inscrits[0];
-          inscrits.splice(0, 1);
-          characters.push(new Character('Villageois', user));
-        }
-        for (let i = 0; i < nbChasseur; i++) {
-          const user = inscrits[0];
-          inscrits.splice(0, 1);
-          characters.push(new Character('Chasseur', user));
-        }
-        for (let i = 0; i < nbCupidon; i++) {
-          const user = inscrits[0];
-          inscrits.splice(0, 1);
-          characters.push(new Character('Cupidon', user));
-        }
-        for (let i = 0; i < nbVoyante; i++) {
-          const user = inscrits[0];
-          inscrits.splice(0, 1);
-          characters.push(new Character('Voyante', user));
-        }
-        for (let i = 0; i < nbGarde; i++) {
-          const user = inscrits[0];
-          inscrits.splice(0, 1);
-          characters.push(new Character('Garde', user));
-        }
-        for (let i = 0; i < nbLoupGarou; i++) {
-          const user = inscrits[0];
-          inscrits.splice(0, 1);
-          characters.push(new Character('Loup-Garou', user));
-        }
-        for (let i = 0; i < nbLoupBlanc; i++) {
-          const user = inscrits[0];
-          inscrits.splice(0, 1);
-          characters.push(new Character('Loup-Blanc', user));
-        }
-        for (let i = 0; i < nbSorcière; i++) {
-          const user = inscrits[0];
-          inscrits.splice(0, 1);
-          characters.push(new Character('Sorcière', user));
-        }
-        // =====================START GAME====================
-        let end: string | false | number = false;
+      });
 
-        const game = new Game(this.client, characters, interaction.guild!, (interaction.channel as TextChannel)!.parentId!);
-        await game.startGame();
-        await game.sendRolesToUsers();
-        while (!end) {
-          end = await game.turn();
-          if (end) game.end();
-        }
+      const total = nbChasseur + nbCupidon + nbVoyante + nbGarde + nbLoupGarou + nbLoupBlanc + nbSorcière + nbVillageois;
+      if (inscrits.length < total) {
+        return await interaction.channel?.send({
+          content: 'Il manque des personnes pour que la partie commence !',
+        });
+      }
+      //=====================SHUFFLE=====================
+      shuffle(inscrits);
+      //=====================AFFECT-USERS=====================
+      for (let i = 0; i < nbVillageois; i++) {
+        const user = inscrits[0];
+        inscrits.splice(0, 1);
+        characters.push(new Character('Villageois', user));
+      }
+      for (let i = 0; i < nbChasseur; i++) {
+        const user = inscrits[0];
+        inscrits.splice(0, 1);
+        characters.push(new Character('Chasseur', user));
+      }
+      for (let i = 0; i < nbCupidon; i++) {
+        const user = inscrits[0];
+        inscrits.splice(0, 1);
+        characters.push(new Character('Cupidon', user));
+      }
+      for (let i = 0; i < nbVoyante; i++) {
+        const user = inscrits[0];
+        inscrits.splice(0, 1);
+        characters.push(new Character('Voyante', user));
+      }
+      for (let i = 0; i < nbGarde; i++) {
+        const user = inscrits[0];
+        inscrits.splice(0, 1);
+        characters.push(new Character('Garde', user));
+      }
+      for (let i = 0; i < nbLoupGarou; i++) {
+        const user = inscrits[0];
+        inscrits.splice(0, 1);
+        characters.push(new Character('Loup-Garou', user));
+      }
+      for (let i = 0; i < nbLoupBlanc; i++) {
+        const user = inscrits[0];
+        inscrits.splice(0, 1);
+        characters.push(new Character('Loup-Blanc', user));
+      }
+      for (let i = 0; i < nbSorcière; i++) {
+        const user = inscrits[0];
+        inscrits.splice(0, 1);
+        characters.push(new Character('Sorcière', user));
+      }
+      // =====================START GAME====================
+      let end: string | false | number = false;
+      const game = new Game(this.client, characters, interaction.guild!, (interaction.channel as TextChannel)!.parentId!);
+      await game.startGame();
+      await game.sendRolesToUsers();
+      while (!end) {
+        end = await game.turn();
+        if (end) game.end();
       }
     });
   }
